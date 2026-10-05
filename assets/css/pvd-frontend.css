@@ -1,0 +1,104 @@
+/* Prevent Video Download — Frontend Styles */
+
+/* Hide native download button in all browsers */
+video::-internal-media-controls-download-button {
+    display: none !important;
+}
+
+video::-webkit-media-controls-download-button {
+    display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+    overflow: hidden !important;
+}
+
+video::-webkit-media-controls-panel {
+    width: calc(100% + 30px) !important;
+}
+
+video::-webkit-media-controls-picture-in-picture-button {
+    display: none !important;
+}
+
+/* Watermark */
+.pvd-watermark-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2147483646;
+    overflow: hidden;
+}
+
+.pvd-watermark-item {
+    position: absolute;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: rotate(-30deg);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Video non-draggable */
+video {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+}
+
+.elementor-widget-video video,
+.elementor-video,
+.e-hosted-video video {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+}
+
+video::selection { background: transparent; }
+video::-moz-selection { background: transparent; }
+
+/* Warning toast */
+.pvd-warning-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, #e53935, #c62828);
+    color: #ffffff;
+    padding: 16px 28px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(229, 57, 53, 0.4);
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    max-width: 90vw;
+}
+
+.pvd-warning-toast.pvd-warning-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.pvd-warning-icon {
+    font-size: 22px;
+    line-height: 1;
+}
