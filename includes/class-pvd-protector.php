@@ -138,8 +138,10 @@ class PVD_Protector {
         }
 
         // Early inline script: blocks keys + contextmenu before any other JS loads.
-        // Also blocks beforeunload (Save As dialog) and printing.
-        echo '<script type="text/javascript">(function(){try{var d=document;var w=window;d.addEventListener("keydown",function(e){var k=e.key?e.key.toUpperCase():"";var c=e.keyCode||e.which;var ctrl=e.ctrlKey||e.metaKey;var sh=e.shiftKey;if(c===123||(ctrl&&sh&&(k==="I"||k==="J"||k==="C"||k==="K"))||(ctrl&&!sh&&(k==="U"||k==="S"||k==="P"))||(ctrl&&sh&&k==="S")||k==="PRINTSCREEN"){e.preventDefault();e.stopPropagation();return false;}},true);d.oncontextmenu=function(){return false;};d.onkeydown=function(e){var c=e.keyCode||e.which;if(c===123){e.preventDefault();return false;}};w.onbeforeunload=function(){};}catch(e){}})();</script>' . "\n";
+        // Uses capture-phase addEventListener (not oncontextmenu assignment) so other
+        // scripts cannot easily override it. Blocks Ctrl+S (Save As), Ctrl+U (View Source),
+        // F12, Ctrl+Shift+I/J/C (DevTools), Ctrl+P (Print), and right-click.
+        echo '<script type="text/javascript">(function(){try{var d=document;var w=window;var block=function(e){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();return false;};d.addEventListener("contextmenu",function(e){return block(e);},true);d.addEventListener("keydown",function(e){var k=(e.key||"").toUpperCase();var c=e.keyCode||e.which;var ctrl=e.ctrlKey||e.metaKey;var sh=e.shiftKey;if(c===123||(ctrl&&sh&&(k==="I"||k==="J"||k==="C"||k==="K"))||(ctrl&&!sh&&(k==="U"||k==="S"||k==="P"))||(ctrl&&sh&&k==="S")||k==="PRINTSCREEN"||c===44){return block(e);}},true);d.addEventListener("mousedown",function(e){if(e.button===2){return block(e);}},true);d.addEventListener("auxclick",function(e){if(e.button===2){return block(e);}},true);}catch(e){}})();</script>' . "\n";
     }
 
     public function inject_noscript_warning() {

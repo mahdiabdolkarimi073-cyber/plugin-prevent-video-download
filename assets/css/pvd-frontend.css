@@ -70,6 +70,11 @@ video {
 video::selection { background: transparent; }
 video::-moz-selection { background: transparent; }
 
+/* Reinforce context menu blocking on touch devices */
+body {
+    -webkit-touch-callout: none !important;
+}
+
 /* Warning toast */
 .pvd-warning-toast {
     position: fixed;

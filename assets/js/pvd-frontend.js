@@ -15,16 +15,27 @@
 
     // SAFETY: If we are inside any visual builder/editor, do NOT apply protection.
     (function detectBuilder() {
-        if (w.elementor || (w.location && (w.location.href.indexOf('elementor-preview') !== -1 || w.location.href.indexOf('elementor') !== -1))) {
-            return;
+        var href = w.location ? w.location.href : '';
+        var search = w.location ? w.location.search : '';
+        // Only skip when the URL has actual builder query params — not just any URL containing "elementor"
+        var builderParams = ['elementor-preview', 'elementor', 'et_fb', 'fl_builder', 'ct_builder', 'bricks-editor', 'breakdance', 'wp_customize', 'customize_changeset_uuid'];
+        for (var bi = 0; bi < builderParams.length; bi++) {
+            if (search.indexOf(builderParams[bi]) !== -1) return;
         }
-        if (w.location) {
-            var builders = ['et_fb', 'fl_builder', 'ct_builder', 'bricks-editor', 'breakdance', 'wp_customize', 'customize_changeset_uuid'];
-            var href = w.location.href;
-            for (var bi = 0; bi < builders.length; bi++) {
-                if (href.indexOf(builders[bi]) !== -1) return;
+        // Check GET params more precisely
+        if (w.location && w.location.search) {
+            var qs = w.location.search.substring(1);
+            var pairs = qs.split('&');
+            for (var pi = 0; pi < pairs.length; pi++) {
+                var key = pairs[pi].split('=')[0];
+                if (key === 'elementor-preview' || key === 'elementor' || key === 'action') {
+                    var val = pairs[pi].split('=')[1] || '';
+                    if (key === 'action' && val !== 'elementor') continue;
+                    return;
+                }
             }
         }
+        if (w.elementor && w.elementor.editor) return;
         if (d.body && d.body.className && d.body.className.indexOf('elementor-editor-active') !== -1) {
             return;
         }
@@ -95,17 +106,42 @@
     /* ------------------------------------------------------------------ */
     /* 1. Global right-click blocking (entire page)                       */
     /* ------------------------------------------------------------------ */
-    if (S.disableRightClick) {
-        d.addEventListener('contextmenu', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            showWarning();
-            return false;
+    // Strong right-click blocking — capture phase + stopImmediatePropagation so other
+    // scripts can't re-enable it. Also block mousedown button===2 to prevent the
+    // browser from even showing its native menu.
+    var blockContextMenu = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        showWarning();
+        return false;
+    };
+
+    if (S.disableRightClick || S.hideContextMenu) {
+        d.addEventListener('contextmenu', blockContextMenu, true);
+        d.addEventListener('contextmenu', blockContextMenu, false);
+        // Also intercept mousedown for right-click (button===2) to prevent the native menu
+        d.addEventListener('mousedown', function (e) {
+            if (e.button === 2) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                return false;
+            }
+        }, true);
+        d.addEventListener('auxclick', function (e) {
+            if (e.button === 2) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                return false;
+            }
         }, true);
     }
 
     if (S.hideContextMenu) {
         d.oncontextmenu = function () { return false; };
+        w.oncontextmenu = function () { return false; };
     }
 
     /* ------------------------------------------------------------------ */
@@ -155,27 +191,16 @@
     /* ------------------------------------------------------------------ */
     /* 3. Block Save As via beforeunload                                  */
     /* ------------------------------------------------------------------ */
-    if (S.blockVideoDownload) {
-        // Intercept beforeunload to prevent the browser Save As dialog
-        // When the user tries Ctrl+S, the browser fires beforeunload.
-        // We already block Ctrl+S in keydown, but this is a backup for
-        // browser menu File > Save Page As.
-        var origBeforeUnload = w.onbeforeunload;
-        w.onbeforeunload = function (e) {
-            // Check if this is a save attempt vs a genuine navigation
-            // We can't fully distinguish, so we just ensure no save dialog
-            // by not returning a string (which would show a prompt)
-            return undefined;
-        };
-
-        // Block the Ctrl+S save dialog specifically by intercepting the
-        // save event at the capture phase
+    // Strong Save As blocking — block Ctrl+S at capture phase with stopImmediatePropagation
+    // so other scripts (or the browser default) can't override our preventDefault.
+    if (S.disableShortcuts || S.blockVideoDownload) {
         d.addEventListener('keydown', function (e) {
             var ctrl = e.ctrlKey || e.metaKey;
-            var k = e.key ? e.key.toUpperCase() : '';
+            var k = (e.key || '').toUpperCase();
             if (ctrl && k === 'S') {
                 e.preventDefault();
                 e.stopPropagation();
+                if (e.stopImmediatePropagation) e.stopImmediatePropagation();
                 showWarning();
                 return false;
             }
